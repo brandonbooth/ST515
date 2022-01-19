@@ -1,0 +1,65 @@
+---
+title: "Homework Problem 2.2"
+author: "Brandon Booth"
+data: "`r Sys.Date()`"
+output: word_document
+---
+
+
+```{r}
+## Load the data set
+gravid = read.table("../data/gravid.txt", header=TRUE)
+str(gravid)
+head(gravid)
+
+## Attach the data set so that we can access the columns by using the column names directly.
+attach(gravid)
+
+```
+
+(a) Read the documentation file (lettucedoc.txt):
+
+LETTUCE - Data on the effect of different amounts of ammonium nitrate on
+lettuce production.  The experiment was conducted in a completely
+randomized design, using a 4x5 rectangular array of plots in a field.
+------------------------------------------------------------------------
+
+TREAT    treatment (pounds of nitrogen per acre)
+HEADS    number of heads of lettuce harvested from the plot
+According to the design described above, use R to generate one instance of randomization of the five nitrogen treatments to the 20 plots. Use a 4×5 table to show your randomization result. (Show your R code.)
+
+```{r}
+## Load the data
+lettuce = read.table("../data/lettuce.txt", header=TRUE)
+str(lettuce)
+lettuce
+attach(lettuce)
+
+```
+
+
+(b)	Draw a multiple boxplot of the numbers of heads of lettuce in the five groups.
+```{r}
+## Boxplot
+boxplot(heads ~ treat, main="Boxplots of the numbers of lettuce heads havested", xlab="treatment")
+
+```
+
+(c)	Perform an analysis of variance on heads of lettuce as a function of nitrogen treatment. (For now, don’t worry about checking assumptions or considering transformations of the response variables.)
+```{r}
+treat.f = as.factor(treat)
+m = lm(heads ~ treat.f)
+anova(m)
+
+oneway.test(heads ~ treat.f)
+```
+
+(d)	Provide nontechnical interpretations of the boxplot and the results of the ANOVA.
+
+Looking at the box plot we can see that all treatments where nitrogen is used result in a greater average number of lettuce heads. Of the treatments with nitrogen, 50 pounds of nitrogen per acre resulted in the greatest spread and plot with the greatest number of lettuce heads, while pounds of nitrogen per acre resulted in the highest average heads of lettuce per plot.
+
+From the results of the ANOVA test we can see that with p-value less than 0.01 there is convincing evidence that there is a difference in the mean numbers of lettuce heads resulting is not the same for each of the treatments.
+
+
+??? How to interpret results if different between ANOVA and Welch's test???
+

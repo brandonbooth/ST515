@@ -1,0 +1,112 @@
+---
+title: "Homework Problem 2.1"
+author: "Brandon Booth"
+data: "`r Sys.Date()`"
+output: word_document
+---
+
+
+```{r}
+## Load the data set
+gravid = read.table("../data/gravid.txt", header=TRUE)
+str(gravid)
+head(gravid)
+
+## Attach the data set so that we can access the columns by using the column names directly.
+attach(gravid)
+
+```
+
+(a)	Do a graphical comparison of the numbers of embryos in the two cohorts of females included in this data set, e.g., a boxplot, or a pair of histograms drawn to the same scale. Comment on the graph.
+
+```{r}
+## Boxplot
+boxplot(nembr ~ cohort, main="Boxplots of the numbers of embryos", xlab="Cohort")
+
+## A pair of histograms
+par(mfrow=c(2,1))
+hist(nembr[cohort==1], xlim = c(0, 50), breaks = seq(0, 50, 2.5), main = "Cohort 1")
+hist(nembr[cohort==2], xlim = c(0, 50), breaks = seq(0, 50, 2.5), main = "Cohort 2")
+
+```
+Based of the box plat and histograms we can see that the mean number of embryos in cohort 2 is larger than cohort 1. The spread in cohort 2 is also larger than cohort 1. 
+
+
+(b)	Do an equal-variances t-test comparing the numbers of embryos in cohort 1 vs. cohort 2. Show the output, and interpret your results in a nontechnical way.
+```{r}
+t.test(nembr[cohort==1], nembr[cohort==2], var.equal=TRUE)
+```
+The mean of cohort 1 was found to be 18.89362 and the mean numbers of embryos of cohort 2 was found to be 23.33333. From the Two-sample t-test we can see that the difference of means between between cohort 1 and cohort 2 is not equal to 0 (p-value =  9.353e-06). 
+
+
+(c)	Do an analysis of variance on these data, i.e., test the hypothesis that the mean number of embryos doesn’t depend on cohort. Show the output, and interpret your results.
+```{r}
+m = lm(nembr ~ cohort)
+anova(m)
+```
+
+From the results of the ANOVA test we can see that with p-value less than 0.01 there is convincing evidence that there is a difference in the mean numbers of embryos of at least one of the cohorts.
+
+
+(d)	Calculate the pooled sample variance of nembr over the two cohorts:
+
+How does the error sum of squares in the ANOVA table relate to the pooled sample variance? 
+How does the F-statistic from the ANOVA relate to the t-statistic from the t-test?
+
+```{r}
+## the numbers of mysids in each of the two cohorts
+table(cohort) 
+
+#or
+tapply(nembr, cohort, "length")
+tapply(nembr, cohort, "var")
+
+#calculate sample size of each group
+n1 <- length(nembr[cohort==1])
+n2 <- length(nembr[cohort==2])
+
+## the sample variance of number of embryos in cohort 1 and cohort 2
+var1 <- var(nembr[cohort==1])
+var2 <- var(nembr[cohort==2])
+
+#calculate pooled variance between the two groups
+pooled <- ((n1-1)*var1 + (n2-1)*var2) / (n1+n2-2)
+
+#display pooled variance
+pooled
+```
+
+When calculating the pooled sample variance of the data we see that it is the same as what is listed for the error sum of squares in the ANOVA table.
+
+The t-statistic from the t-test (-4.6899) is smaller than the F-statistic (21.995), while the p-value of each are the same.
+
+
+(e)	The variable called size (body size of the mysid) may confound your tests of the association between embryo numbers and cohort. Can you find any evidence, graphical or otherwise, that body size is a confounding factor? Explain.
+```{r}
+
+## Boxplot
+boxplot(nembr ~ size, main="Boxplots of the numbers of embryos", xlab="Cohort")
+
+# mean size of each cohort
+mean(size[cohort==1])
+mean(size[cohort==2])
+
+median(size[cohort==1])
+median(size[cohort==2])
+
+## A pair of histograms
+par(mfrow=c(2,1))
+hist(size[cohort==1], xlim = c(0, 20), breaks = seq(0, 20, .5), main = "Cohort 1")
+hist(size[cohort==2], xlim = c(0, 20), breaks = seq(0, 20, .5), main = "Cohort 2")
+
+
+
+
+```
+Looking at the box plot of numbers of embryos by size, we can see that a larger size corresponds to a larger numbers of embryos. Looking a the mean and median size of each cohort and the histogram of size by cohort we can see that cohort 2 has a larger average and median size. Thus the average number of embryos of each cohort might be confounded by the size of embryos within the cohorts.
+
+
+```{r}
+## when you're done working with the 'gravid' data set
+detach() 
+```
