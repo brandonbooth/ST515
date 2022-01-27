@@ -1,0 +1,395 @@
+---
+title: "Homework Problem 2.4, 2.5, 2.6"
+author: "Brandon Booth"
+data: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+library(ggplot2)
+```
+
+Problem 2.4
+```{r}
+## Load the data into R
+lettuce = read.table("../data/lettuce.txt", header=TRUE)
+str(lettuce)
+lettuce
+
+## Attached the data frame
+attach(lettuce)
+
+## Convert treat to a factor variable
+treat.f = factor(treat)
+
+## Plot the data
+boxplot(heads ~ treat.f)
+```
+
+(a) Construct a table of the mean number of heads of lettuce (¯y), the standard deviation s (square root of the sample variance), and the number of plots (n) in the five nitrogen treatments. Show your R code.
+```{r}
+ybar = tapply(heads, treat, "mean");
+```
+will return the mean value of heads in each of the groups specified by treat. Repeat using the functions sd and length to get the values of s and n, respectively. Then use rbind(ybar, s, n) to organize the results into a table.
+```{r}
+# calculate mean, standard deviation, and length values of heads in each of the groups specified by treatment
+ybar = tapply(heads, treat, "mean")
+s = tapply(heads, treat, "sd")
+n = tapply(heads, treat, "length")
+
+# assign values to table
+rbind(ybar, s, n) 
+```
+
+(b) (10 points) Consider the contrast C=(μ_50+μ_100+μ_150+μ_200)/4-μ_0, where the subscripts refer to the nitrogen amounts. Show your arithmetic in answering the following questions.
+You can use R to help with some of the computation. For example, to extract MSE and its number of d.f. from the ANOVA output:
+```{r}
+## Fit a regression model
+m = lm(heads ~ treat.f);
+
+## ANOVA
+a = anova(m);
+a
+
+## Extract MSE and df from the ANOVA output
+MSE = a$"Mean Sq"[2];
+df = a$Df[2];
+
+MSE
+df
+```
+i.	Estimate C using the sample means from your table. Call the estimate c.
+```{r}
+# calculate mean head of lettuce for each treatment
+t0_mean_heads <- mean(lettuce[lettuce$treat == 0,][,2])
+t50_mean_heads <- mean(lettuce[lettuce$treat == 50,][,2])
+t100_mean_heads <- mean(lettuce[lettuce$treat == 100,][,2])
+t150_mean_heads <- mean(lettuce[lettuce$treat == 150,][,2])
+t200_mean_heads <- mean(lettuce[lettuce$treat == 200,][,2])
+
+# calculate contrast C
+c <- ((t50_mean_heads+t100_mean_heads+t150_mean_heads+t200_mean_heads)/4) - t0_mean_heads
+
+#print contrast C
+c
+```
+
+ii.	Estimate the standard error (square root of the estimated variance) of c. Call it s_c. You will need the MSE from the single-factor ANOVA model in your calculations.
+```{r}
+# estimate of standard error
+s_c <- sqrt(MSE*( (1/4)^2 / 4) + ((1/4)^2 /4) + ((1/4)^2 / 4) + ((1/4)^2 / 4) + ((-1)^2 / 4))
+
+# print standard error (s_c)
+s_c
+```
+The estimate of the standard error is 1.942668.
+
+iii.	Use the above results to construct a 95% confidence interval for C.
+```{r}
+# confidence intervals
+c - qt(p=.975, df=15) * s_c # lower CI
+c + qt(p=.975, df=15) * s_c # Upper CI
+
+```
+The 95% confidence interval for c ranges from 34.1093 to 42.3907
+
+iv.	Interpret the confidence interval. What does it tell you about the effect of the nitrogen treatments on lettuce production?
+With 95%  confidence the difference in mean heads of lettuce on a plot from using a nitrogen treatment is between 34.1093 to 42.3907 more heads of lettuce than with no treatment of nitrogen.
+
+The 95% confidence interval for c ranges from 34.1093 to 42.3907. With 95% confident the difference between the mean of the treatment group with no nitrogen and average mean of treatment groups with nitrogen ranges from 34.1093 to 42.3907.
+
+
+(c)	Do an analysis of variance of heads by treatment, excluding the zero-nitrogen plots, and interpret the results of the F-test.
+```{r}
+## Find treatments that are not 0
+ind = treat.f != 0
+
+## Fit regression model and summarize ANOVA
+m1 = lm(heads ~ treat.f, subset = ind)
+anova(m1)
+```
+
+From the results of the anova test, with p-value of 0.6122 there is no difference in the mean heads of lettuce from the three treatments.
+
+
+(d)	(10 points) Suppose you are planning a future study of differences in lettuce production among the 50-, 100-, 150- and 200-unit nitrogen treatments. Assume that the true mean numbers of heads will be identical to those observed in the current study (145.5, 149.0, 157.5, and 149.0), and the mean square error will be 166.83. Use the R function power.anova.test to answer the following two questions. Include your code in the answers.
+i.	How much power would this design (using 4 plots per treatment) have to find a statistically significant (at the 0.05 level) difference among means?
+
+```{r}
+means <- c(145.5, 149.0, 157.5, 149.0)
+power.anova.test(groups=4, n=4, between.var=var(means), within.var=166.83)
+```
+This design would have a power of 0.143828 (14.3828%).
+
+ii.	How many plots per treatment would we need to have 80% power to find a statistically significant difference among means?
+
+```{r}
+power.anova.test(groups=4, between.var=var(means), within.var=166.83, power=0.8)
+```
+We would need 25 plots per treatment.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------
+
+Problem 2.5
+The fluoride data
+Consider the fluoride data set, in which changes in fluoride were measured in teeth having bands affixed with one of six kinds of cement:
+
+FLUORIDE - results of an experiment by dentists at the Mayo Clinic studying
+the effect of different orthodontic cements on fluoride loss.  Ten human
+teeth were assigned to each of six cement types in a completely randomized
+design, i.e., each tooth received a single cement type.  The protocol was:
+fluoride measured in small biopsy --> band cemented to tooth --> tooth
+bathed in synthetic saliva for three weeks --> band removed and fluoride
+measured in another biopsy.
+ 
+   cement       type of orthodontic cement used
+                1 = ENDUR, 2 = ENDUR+F, 3 = FL-EVER, 4 = FL-BOND,
+                5 = GLASS, 6 = PHASE2
+   uptake       estimated change in fluoride concentration (ppm), final
+                minus initial
+
+Suppose we want to construct a 95% confidence interval for μ_5-μ_6, the difference in mean uptake between cement types 5 and 6.
+
+```{r}
+## Read the data file
+fluoride = read.table("../data/fluoride.txt", header=TRUE);
+str(fluoride);
+
+## Attach the data frame
+attach(fluoride);
+
+## Plot the data
+boxplot(uptake~factor(cement), xlab="cement", ylab="uptake");
+```
+
+An analysis of variance (not required) gives strong evidence that mean fluoride uptake varies among cement types.
+
+(a)	Fit the regression model
+
+y=β_0+β_1 x_1+β_2 x_2+β_3 x_3+β_4 x_4+β_5 x_5+e,
+where y is fluoride uptake; x_i=1 for cement type i and x_i=0 otherwise, for i=1,...,5 (i.e., type 6 is the reference group); and e is random error.
+
+```{r}
+## Create Xi by hand:
+x1 = as.numeric(cement==1);
+x2 = as.numeric(cement==2);
+x3 = as.numeric(cement==3);
+x4 = as.numeric(cement==4);
+x5 = as.numeric(cement==5);
+
+## Fit the regression model
+m1 = lm(uptake ~ x1 + x2 + x3 + x4 + x5);
+
+## Summarize regression model
+summary(m1);
+```
+Use one of the estimated β’s (you have to figure out which one) and its standard error to construct the confidence interval. Interpret your result.
+
+[Hint: write down expressions for the predicted values of y for the two cement types in terms of the β’s, and see how they differ.]
+
+μ_5 = β_0+β_5
+μ_6 = β_0
+
+μ_5-μ_6 = β_0 + β_5 - β_0 = β_5
+
+β_5 estimate = 0.10190
+β_5 Standard Error = 0.02282
+
+Confidence Interval
+```{r}
+#Confidence Interval
+0.10190 - qt(p=.975, df=54) * 0.02282 # Lower CI
+0.10190 + qt(p=.975, df=54) * 0.02282 # Upper CI
+```
+We can see that the 95% confidence interval ranges from lower=0.05614865 to upper=0.1476513.
+
+(b)	Use the Tukey method, as shown below. The lwr and upr columns contain the confidence limits.
+```{r}
+m4 = aov(uptake ~ factor(cement))
+TukeyHSD(m4)
+```
+The confidence interval ranges from lower=0.03448289 to upper= 0.16931711.
+
+
+(c) You should have found that the interval from (a) is narrower than the interval from (b). Why is that?
+
+Tukey’s HSD is more stringent than tests based on LSD. We see that Tukey’s HSD is greater than the LSD. This implies that when testing pair-wise group mean differences, tests based on Tukey’s HSD will be more stringent and have less rejections than the tests based on LSD. So using Tukey’s HSD, the resulting confidence interval will be wider.
+
+
+
+
+The following is for your reference only. DO NOT TURN IN THIS PART:
+Note: Another way to fit the regression model is to use “factor(cement)” as the predictor. However, in model m1 above, the intercept—the mean of the reference group—corresponds to cement 6. In model m2~lm(uptake~factor(cement)) (see below), the intercept corresponds to cement 1. The model matrices for m1 and m2 will thus be different, and the β’s will have different meanings.
+
+When converting “cement” to a factor, we can reorder the factor levels so that level 6 will later be used as the reference in a regression model. See the code blow: the fitted model m3 is the same as m1.
+
+Please study the model matrix for each of the model above—m1, m2, m3—carefully, and see how they correspond to the regression equations. In particular, see whether you can get the fitted value for each observation from the corresponding row of the model matrix and the estimated regression coefficients.
+
+```{r}
+## Use factor(cement) as the predictor:
+cement.f = factor(cement);
+m2 = lm(uptake ~ cement.f);
+
+summary(m2);
+
+x.f = factor(cement, level=c(6, 1:5));
+m3 = lm(uptake ~ x.f);
+summary(m3);
+
+coef(m1)
+model.matrix(m1)
+
+coef(m2)
+model.matrix(m2)
+
+coef(m3)
+model.matrix(m3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------
+
+
+
+Problem 2.6
+This question pertains to the data set mhauls, consisting of numbers of mysids caught in 22 samples taken at four stations in Lake Washington, Seattle:
+
+MHAULS - numbers of mysids caught in epibenthic dredge hauls in Lake
+         Washington, Seattle.  Each record represents a single haul.
+----------------------------------------------------------------------
+
+   station      sampling location
+                   (1 = Madison Park, 2 = Rainier Beach,
+                    3 = Cozy Cove, 4 = North Point)
+   haul         sequence of haul (there were 5 or 6 hauls per station)
+   nmys         number of mysids in haul
+
+```{r}
+## Read the data file
+mhauls = read.table("../data/mhauls.txt", header=TRUE);
+str(mhauls)
+mhauls
+
+## Attach the data frame
+attach(mhauls);
+```
+
+(a)	Do an ANOVA of nmys by station, assuming all assumptions are met. State the hypothesis being tested, show the ANOVA table, and interpret the results of the F-test.
+[ Remember that you need to make station a categorical variable, or factor. ]
+
+
+The hypothesis being tested is if there is a difference in the means mysids of each station. The null hypothesis is that there is no difference in mean mysids of each station.
+
+```{r}
+## Fit a regression model
+m = lm(nmys ~ factor(station) )
+
+## ANOVA
+a = anova(m)
+a
+```
+
+From the results of the F-test, with a p-value of 0.09685 there is suggestive but not convincing evidence to reject the null hypothesis that there is no difference in the mean mysids of each station.
+
+
+(b) Using the R function qqnorm, create a normal probability plot that helps you to judge how well these data follow the normality assumption made in the analysis of variance. Comment on the graph. You don’t need to do any formal tests here.
+[ Remember that for model diagnostics, you should look at the residuals. ]
+
+```{r}
+set.seed(99)
+qqnorm(rnorm(220))
+abline(0,1)
+```
+The plot appears to be close to linear except for at the ends. This does not appear to violate linearity assumption. This data seems ok.
+
+
+(c) Check the assumption of constant variance by (i) doing a multiple boxplot of nmys by station, (ii) examining a plot of residuals vs. predicted numbers of mysids, and (iii) applying Levene’s test (load the code in levene2.R into R). Interpret your results.
+i.
+```{r}
+library(broom)
+library(faraway)
+library(ggplot2)
+
+boxplot(nmys ~ factor(station), data = mhauls)
+
+```
+
+There does not appear to be equal variance between the groups. Station 3 has the least amount of variation and station 2 has the greatest amount of variation. There is a very big difference between the variance of these two groups.
+
+ii.
+```{r}
+fit_mhauls <- lm(nmys ~ factor(station), data = mhauls)
+plot(fitted(fit_mhauls), resid(fit_mhauls))
+```
+When examining a plot of residuals vs. predicted numbers of mysids, you can see a linear trend as the nmys increase the residuals increase as well.
+
+iii. 
+
+```{r}
+r <- residuals(fit_mhauls)
+## levene.test(r ~ dose)
+source('levene2.R')
+levene2(r, station, method=2)
+levene2(nmys, station, method=2)
+```
+
+With p=value of 0.03299 there is evidence that variance among the stations is not equal. This is also demonstated in the plots.
+
+
+(d)	Re-do the ANOVA using log(nmys) as the response, and check the constant-variance assumption using the same three tools asked for in part (c). Which response—nmys or log(nmys)—is better to use in the ANOVA, in your opinion? Why?
+```{r}
+## Fit a regression model
+m = lm(log(nmys) ~ factor(station) )
+#summary(m)
+
+## ANOVA
+a = anova(m)
+a
+
+
+r = resid(m)
+boxplot(log(nmys) ~ factor(station))
+
+boxplot(r ~ factor(station))
+
+
+r_log <- residuals(m)
+source('levene2.R')
+levene2(r_log, station, method=2)
+
+```
+With p=value of 0.2626 there is no evidence that mean log(nmys) of the stations are not equal.
+With p=value of 0.6576 there is no evidence that variance among of the stations are not equal.?????? it looks like the variance is not equal???????????
+
+
+(e)	Finally, use Welch’s test (oneway.test in R) to test the association between (untransformed) number of mysids and station. Interpret the result.
+```{r}
+oneway.test(nmys ~ factor(station) )
+```
+With p=value of 0.04982 there is evidence that mean nmys of the stations are not equal.
+
+
