@@ -1,5 +1,5 @@
 ---
-title: "Homework Problem 4"
+title: "Homework Problems 4"
 author: "Brandon Booth"
 date: "`r Sys.Date()`"
 output: word_document
