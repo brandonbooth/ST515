@@ -1,0 +1,310 @@
+---
+title: "Homework Problem 1.1"
+author: "Brandon Booth"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+library(ggplot2)
+library(stringr)
+```
+
+
+Problem 4.1
+Consider the experiments on plant growth in environmentally-controlled chambers that were described in Problem 2.3. Suppose we wish to test the effects of two factors on plant growth: CO2 concentration (ambient vs. high) and temperature (low vs. high). These factors can be varied across the chambers, but a single chamber must be kept at a given CO2 concentration and temperature for the duration of the experiment.
+Assume we have 12 chambers at our disposal; each chamber can accommodate 12 seedlings; and we have identified 144 healthy seedlings of nearly uniform weight. The response in each chamber will be summarized as the mean accumulated dry weight of the 12 plants in that chamber after three months.
+(a)	Describe how you would design and execute an experiment to test the effects of CO2 concentration and temperature on plant growth.
+
+1. A research question: 
+•	Investigate the effect of CO2 concentration (ambient vs. high) and temperature (low vs. high) on plant growth.
+•	What is the effect of the effect of the two CO2 concentrations (ambient vs. high) and the two temperatures (low vs. high) on plant growth?
+
+2. A set of treatments to compare:
+•	The 4 treatment combinations of CO2 concentrations and temperatures.
+  1)	Ambient CO2 (control) x Low temperature
+  2)	High CO2 x Low temperature
+  3)	Ambient CO2 (control) x High temperature
+  4)	High CO2 x High temperature
+
+3. A set of experimental units:
+•	The 12 chambers represent the experimental units.
+
+4. Assignment of treatments to the experimental units:
+•	The 4 treatments are randomly assigned to the 12 chambers in a completely randomized experiment. Each of the 4 treatments are replicated 3 times.
+•	The pots (one seedling per pot) are randomly assigned among the 12 chambers (12 pots per chamber).
+
+5. Measurements of experimental outcomes (on experimental units):
+•	The measurement would be the mean accumulated dry plant weight of each chamber.
+
+
+
+(b)	Identify the statistical procedure you would use to analyze the data, and provide an ANOVA table that shows the sources of variation and associated degrees of freedom.
+
+## To analyze the data we can first look at the data from this experiment using side-by-side boxplots to compare the differences in response of the groups and identify interactions.
+
+### An ANOVA test for two-factor treatment design could be used to test if there is a interaction between the CO2 level and Temperature. We can use the F-statistic and p-value to test for evidence of interaction. We can then determine the siple and main effects of the treatments.
+
+
+
+
+
+Problem 4.2
+Consider the data set chem, on the yield of a chemical reaction as a function of the type of base and the type of alcohol used in the reaction. See script2 for some R tips, and show any R code you use to answer the following questions.
+CHEM - A chemical production process consists of a first reaction with
+an ALCOHOL and a second reaction with a BASE.  A 3x2 factorial experiment
+was conducted with four replicate reactions for each of the six treatment
+combinations.  The response is percent yield.
+
+Note that ALCOHOL and BASE are both categorical variables, i.e., they 
+are not ordered in any way.
+a)	Draw a boxplot of yield for the six treatment combinations.
+```{r}
+## Clean the R environment
+rm(list=ls());
+
+chem <- read.table("../data/chem.txt", header=TRUE)
+attach(chem)
+chem
+
+alcohol.f = factor(alcohol) 
+base.f = factor(base)
+
+boxplot(yield ~ base.f:alcohol.f)
+boxplot(yield ~ alcohol.f:base.f)
+```
+
+
+b)	Fit the two-way ANOVA model, including the interaction term. Show the output, and interpret the results.
+```{r}
+m = lm(yield ~ base.f*alcohol.f)
+anova(m)
+
+interaction.plot(base.f, alcohol.f, yield)
+interaction.plot(alcohol.f, base.f, yield)
+```
+
+### From the results of the ANOVA table we can see that there is a significant interaction between the base and alcohol effects. This means the alcohol effect changes as base effect changes. Addtionaly, alcohol and base main effects are not signicifant.
+
+
+
+c) Create a table of the cell means (i.e., the mean yields for each of the six treatment combinations).
+```{r}
+tapply(yield, list(base.f, alcohol.f), mean)
+
+#tapply(yield, list(base.f, alcohol.f),length)
+```
+
+
+d)	Calculate the simple effects of base (2 minus 1) for the three levels of the alcohol factor. Does there appear to be an interaction between base and alcohol? Explain.
+```{r}
+mu.hat = tapply(yield, list(base.f, alcohol.f), mean)
+mu.hat[2,] - mu.hat[1,] 
+```
+### Yes, there does appear to be an interaction between base and alcohol since the base effect of the first alocohol group has a negative value and the base effect of the other two alcohol groups are positive values.
+
+
+e) Let μ_ij be the mean yield for the combination of base i and alcohol j (i=1,2; j=1,2,3). Estimate, and compute a 95% confidence interval for, the following contrast:
+C=(μ_22-μ_12)-(μ_21-μ_11).
+What if anything does this interval tell you about the interaction between base and alcohol?
+```{r}
+c.hat = (mu.hat[2,2] - mu.hat[1,2]) - (mu.hat[2,1] - mu.hat[1,1])
+c.hat
+
+#SE of C_hat
+MSE = 2.0421
+SE.chat = sqrt(MSE * (1/4 + 1/4 + 1/4 + 1/4))
+
+# t critical value
+alpha = 0.05
+t.critical = qt(1 - alpha/2, 18)
+
+# 95% CI
+CI = c.hat + c(-1,1)*t.critical * SE.chat
+CI
+```
+### The CI for the contrast is 1.172739 to 7.177261. From the contrast and the intervals we can see that the alcohol effects in base group 1 are different than from base group 2. This shows that there is an significant interaction.
+
+
+f) Using the residuals from the two-way ANOVA: 
+(i) draw and interpret a plot to assess the normality assumption; 
+(ii) draw and interpret a plot to assess the constant-variance assumption; and 
+(iii) perform and interpret the results of Levene’s test.
+
+```{r}
+plot(m)
+source('levene2.R')
+levene2(yield, base.f:alcohol.f, method=2)
+```
+
+### (i) Normality assumption does not appear to be violated.
+### (ii) Constant-variance assumption does not appear to be violated. There is some variance in the residuals on the far right of Q-Q plot but not enough to violate this assumption.
+### (iii) Results of Levene’s test indicate no evidence assumption of equal variance is violated.
+
+
+
+
+
+
+
+Problem 4.3
+The data set plant is from a factorial experiment on the effects of CO2 concentration (ambient vs. high) and soil temperature (low vs. high) on plant growth in 12 environmentally-controlled chambers. The four treatment combinations were randomly assigned to the chambers (3 chambers per treatment combination), and 12 plants were grown in each chamber. The variable plant.wt gives the mean accumulated dry weights for the 12 plants in each chamber. This experiment was actually run on three plant species simultaneously. For this problem, use only the data for needlegrass (species 2).
+One way to extract data for species 2:
+```{r}
+## Load the full data set
+plant = read.table("../data/plant.txt", header=TRUE);
+
+## Extract data for species 2
+ind = plant$species==2;
+plant.new = plant[ind,];
+
+## Inspect the data structure
+str(plant.new);
+plant.new;
+
+## Attach the data frame
+attach(plant.new);
+
+## Additional preparation, plot the data, etc.
+## ...
+```
+Note: When converting temp to a factor variable, one can change the level labels to make the data more readable. (This is not required for this homework.)
+```{r}
+temp.f = factor(temp, levels = c(0, 1), labels=c("13 C", "18 C"));
+data.frame(temp, temp.f)
+
+co2.f = factor(co2, levels = c(0, 1), labels = c("ambient", "high"));
+data.frame(co2, co2.f)
+```
+
+(a)	Draw a graph of the plant weights in the four combinations of CO2 and temperature, and describe the patterns you see.
+```{r}
+f1 = temp.f:co2.f
+levels(f1)
+boxplot(plant.wt~f1, ylab="biomass", xlab="Temp : CO2")
+
+f2 = co2.f:temp.f
+levels(f2)
+boxplot(plant.wt~f2, ylab="biomass", xlab="CO2 : Temp")
+
+interaction.plot(temp.f, co2.f, plant.wt)
+```
+### There do no appear to be any intercation between Temperature effect and CO2 effect. This can be see in the plots as the effect of CO2 stays about the same while temperature goes from low to high.
+
+
+(b)	Perform an analysis of variance of plant weight, using a model that includes co2, temp, and their interaction. Include 
+(i) a summary of the mean response in the different treatment combinations; 
+(ii) the ANOVA table; and 
+(iii) an interpretation of your results.
+Note: For this part, use ANOVA, rather than regression, output. There is not an exact correspondence between the P-values in the regression output and those in the ANOVA output, as explained in the lecture notes.
+```{r}
+m = lm(plant.wt ~ temp.f*co2.f)
+anova(m)
+
+unique(data.frame(temp = temp.f, co2 = co2.f, mean = fitted(m)))
+
+tapply(plant.wt, list(temp.f, co2.f), mean)
+
+tapply(plant.wt, list(temp.f, co2.f), length)
+```
+# The results of the ANOVA table indicate that the interaction term is not significant (p-value = 0.89269).
+
+(c)	Use Levene’s test to evaluate the constant-variance assumption of your ANOVA model. Is the result consistent with what you see in your graph from part (a)? Explain.
+```{r}
+source('levene2.R')
+levene2(plant.wt, f1, method=2)
+plot(m)
+```
+### The results of the Levene's test do not show evidence that the equal variance assumption is violated. Looking at the boxplots from part (a) there do appear to be some differences in variation but this indicates that the differences could be do to chance variation or small sample size.
+
+
+(d)	Since the interaction term is non-significant, drop it and fit a model with just the main effects of CO2 and temperature. Present both the ANOVA and regression output, and explain what they suggest about the effects of CO2 and temperature on plant weight.
+
+```{r}
+m2 = lm (plant.wt ~ temp.f + co2.f)
+anova(m2)
+summary(m2)
+```
+
+### From the results of the ANOVA test we can see that temparture and CO2 effects both are significant. This is a source for some of the variation in plant wieght.
+
+
+(e)	Using the ANOVA output from the two models you fit above, do an extra-sum- of-squares test of the null hypothesis that there is no interactive effect of CO2 and temperature on plant growth. That is, extract the needed sums of squares and degrees of freedom, and plug them in to the general formula for the extra-sum-of-squares F- test. Show how to obtain the P-value, and verify that it is the same as that for the interaction term in the full model from part (b).
+
+```{r}
+a_f = anova(m)
+a_r = anova(m2)
+
+
+SSE.f = a_f$'Sum Sq'[4]
+df.f = a_f$Df[4]
+
+SSE.r = a_r$'Sum Sq'[3]
+df.r = a_r$Df[3]
+
+f = ((SSE.r - SSE.f) / (df.r - df.f)) / (SSE.f / df.f)  
+f
+
+p = 1 - pf(f, df.r - df.f, df.f)
+p
+
+anova(m2, m)
+```
+
+### Using the ANOVA test we can compature to the results of the forumla for the extra-sum-of-squares F-test and see that they match.
+
+
+Problem 4.4
+Consider the anode data set, on the effect of furnace position and temperature on carbon anode density.
+ANODE - a two-factor factorial experiment on the effects of TEMPERATURE
+and POSITION in a furnace on carbon anode DENSITY.
+
+There were three furnaces, each kept at a particular temperature (the
+fixed effect of interest).  In each furnace, there were two positions
+(consider this to be a random effect, crossed with temperature).
+Eighteen anodes (the experimental units) were randomly assigned to
+the six temperature-position combinations, three anodes (replicates) 
+per combination.
+
+The response of interest is the density of an anode after a period
+of incubation in the furnace.
+Suppose that the positions used are a random sample from a set of possible positions (i.e., position is a random effect), but the investigators are interested in the particular temperatures used in the experiment (i.e., temperature is a fixed effect). Assume the constant-variance assumption is satisfied for these data. (In fact, Levene’s test on the six treatment combinations gives P=0.45.)
+a) Prepare a graphical summary of anode density in the six treatment combinations. Comment on the apparent main effects of position and temperature, and the interaction between them.
+```{r}
+anode <- read.table("../data/anode.txt", header=TRUE)
+attach(anode)
+
+boxplot(density ~ position:temp, data = anode)
+boxplot(density ~ temp:position, data = anode)
+interaction.plot(position, temp, density)
+```
+
+### Looking at the plots there does not appear to be an interaction between temperature and positon. The difference in mean density between temperature does not change much for each position.
+
+
+b) Perform an appropriate analysis of variance on these data, modeling both position and temperature as categorical variables. Show the ANOVA table; perform F-tests for both main effects and their interaction; and interpret your results. Do not drop the interaction term, even though it is nonsignificant.
+Note: Fit a fixed-effects model and then re-do the F-tests by hand if necessary, as explained on pp. 239-240 of Kuehl.
+```{r}
+mod = lm(density ~ position * temp, data= anode)
+anova(mod)
+summary(mod)
+```
+
+### Based off the results of the ANOVA test there does not appear to be a significant interaction beween position and temperature.
+
+
+c) A colleague suggests that, since temperature is measured on a continuous scale, it would make more sense to model temperature as a quantitative variable, in an ANCOVA-like approach, instead of as a qualitative (categorical) variable. Eager to please, you proceed as follows.
+i. Fit a model of density as a function of the quantitative temperature variable and a factor for position, without the interaction term (since it is nonsignificant). Hand in the regression output.
+```{r}
+mod = lm(density ~ factor(position) + temp, data= anode)
+anova(mod)
+summary(mod)
+```
+### Regression output:
+$\mu = 875.6389 -39.8889(position) + -0.1767(temp) $
+
+
+ii. Interpret the magnitude and the statistical significance of the regression coefficient for temperature. How does your conclusion compare to what you inferred from the earlier model that used a categorical version of temperature? Do you agree with your colleague that temperature should be treated as a quantitative predictor? Explain.
+
+### The intercept is much smaller when interacation term is not included. Term is still not significant. Term for postion and temp are smaller as well and still not significant.
+
