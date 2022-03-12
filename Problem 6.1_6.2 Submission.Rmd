@@ -1,0 +1,171 @@
+---
+title: "Homework Problems 5"
+author: "Brandon Booth"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+library(ggplot2)
+library(stringr)
+```
+
+Problem 6.1
+Consider the alloy data set, on the effect of alloy type and casting on the tensile strength of metal bars (see the documentation file for details). Fit the appropriate ANOVA model, and estimate the variance components due to alloy, casting, and bar (error). What percentage of the total variation in strength is due to alloys, to castings within alloys, and to bars within castings?
+
+Hint: Refer to Kuehl, pages 245-247, and look at script3 on Canvas.
+
+---
+ALLOY - Three formulations of an ALLOY were prepared with four separate
+CASTINGs for each formulation (i.e., there were 12 distinct castings, so
+that CASTING is nested within ALLOY).  Two bars from each casting were 
+tested for tensile STRENGTH.  Assume that ALLOY and CASTING are both 
+random effects.
+---
+```{r Problem 6.1}
+alloy_data = read.table("../data/alloy.txt", header=TRUE)
+alloy_data
+
+attach(alloy_data)
+alloy.f = as.factor(alloy) 
+casting.f = as.factor(casting)
+
+## Create a new vector listing all alloy and casting combinations
+f = alloy.f:casting.f
+
+## Boxplot
+boxplot(strength ~ f, xlab="alloy:casting", ylab="strength")
+
+m1 = lm(strength ~ alloy.f + casting.f %in% alloy.f)
+anova(m1)
+
+## Extract MS
+aa = anova(m1)
+ms = aa$`Mean Sq`
+print('=========================')
+#ms
+ms_a <- aa$`Mean Sq`[1]
+ms_a
+ms_b <- aa$`Mean Sq`[2]
+ms_b
+ms_c <- aa$`Mean Sq`[3]
+ms_c
+print('=========================')
+
+# alloy
+a = 3
+
+# casting
+b = 4
+
+# bars of each casting
+c = 2
+
+var_a <- (ms_a - ms_b) / (b*c)
+var_a  
+var_b <- (ms_b - ms_c) / (c)
+var_b
+var_c <- ms_c
+var_c
+
+print('=========================')
+print('alloy percent of total variation')
+var_a / (var_a + var_b + var_c)
+
+print('casting percent of total variation')
+var_b / (var_a + var_b + var_c)
+
+print('casting percent of total variation')
+var_c / (var_a + var_b + var_c)
+
+inst.relabel = factor(rep(1:4, each=6))
+m3 = lm(strength ~ alloy.f + inst.relabel)
+anova(m3)
+
+m4 = lm(strength ~ alloy.f * inst.relabel)
+anova(m4)
+
+detach(alloy_data)
+```
+
+### From the calculation we can see that alloy accounts for 80.0% of variation, casting accounts for 3.6% of variation, and bars within each casting accounts for 16.4% of variation.
+
+
+Problem 6.2
+Analyze the effect of fish on zooplankton size at the Cornell Experimental Ponds (cep3 data set). Assume that the six ponds were randomly chosen from a large number of similar ponds at the site, and that three of the six were then randomly selected for introductions of fish (bluegill sunfish and pumpkinseed). The other three ponds remained fishless. Several years later, zooplankton were sampled in the ponds (ignore the effect of time of sampling), and their body sizes were determined.
+
+Test the hypothesis that fish have no effect on zooplankton size in two different ways. For each approach, write down the appropriate mathematical model, show how the hypothesis is tested, and interpret the result. Use log(size) as the response, since this seems to stabilize the variance of size across ponds.
+
+(a)	Use a model of log(size) as the sum of the overall mean, the fixed effect of fish, the random effect of pond nested within fish treatment, and a random error due to individuals within ponds.
+Hint: Refer to Kuehl, pages 245 and 248.
+```{r Problem 6.2 a}
+cep3_data = read.table("../data/cep3.txt", header=TRUE)
+cep3_data
+attach(cep3_data)
+
+pond.f = as.factor(pond) 
+fish.f = as.factor(fish)
+f = fish.f:pond.f
+
+mod = lm(log(size) ~ fish.f + pond.f %in% fish.f)
+
+mod_anova <- anova(mod)
+mod_anova
+
+msa <- mod_anova$`Mean Sq`[1]
+msa
+
+msb_a <- mod_anova$`Mean Sq`[2]
+msb_a
+
+f_val <- msa / msb_a
+
+df1 <- mod_anova$`Df`[1]
+df1
+df2 <- mod_anova$`Df`[2]
+df2
+
+pf(f_val,df1,df2, lower.tail = FALSE)
+
+detach(cep3_data)
+```
+
+### From the results of the F test comparing fixed effect of fish and the random effect of pond nested within fish treatment, we can see that the is strong evidence (p-value = 0.002731232) that there is a difference in effects. 
+
+
+(b)	Calculate the mean of log(size) in each pond, and use an appropriate t-test to compare the three means from the fish-containing ponds to the three means from the fishless ponds. That is, the input to your t-test should consist of just six data points.
+For comparison purpose, in (b), use the equal-variance t-test (read the help file of t.test by typing ? t.test in R.)
+
+```{r Problem 6.2 b}
+cep3_data = read.table("../data/cep3.txt", header=TRUE)
+cep3_data
+attach(cep3_data)
+
+pond.f = as.factor(pond) 
+fish.f = as.factor(fish)
+log.size <- log(size)
+f = fish.f:pond.f
+
+y = tapply(log.size, f, mean)
+y
+
+dim(y)=NULL
+y
+
+y[1:3]
+t.test(y[1:3], y[4:6], var.equal=TRUE)
+
+
+#t.test(log.size[fish.f==1], log.size[fish.f==0], var.equal=TRUE)
+
+
+detach(cep3_data)
+```
+
+### From the results of the t.test we can see that the p-value (0.002731) matches with what was determined in part a. This indicates that ther is a difference in effect of fish on log(size) zooplankton.
+
+
+(c) Compare the results of these two approaches, and comment on which one you prefer.
+
+### Comparing the approaches in part (a) and part (b) we can see that we get the same result, (p-value = 0.002731) indicating strong evidence that ponds with fish vs those witout have an effect on the log(size) zooplankton. I preferred using the t.test in part (b) since it was the simplest approach and required fewer steps to get the results.
+
